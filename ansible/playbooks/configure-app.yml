@@ -130,15 +130,11 @@
         version: main
       become_user: ubuntu
 
-    # Local EIP (from configure-env/.env) → PUBLIC_HOST on the server
-    - name: Write PUBLIC_HOST from local EIP into server .env
-      ansible.builtin.copy:
-        dest: /home/ubuntu/task-manager-infrastructure/.env
-        owner: ubuntu
-        group: ubuntu
-        mode: "0644"
-        content: |
-          PUBLIC_HOST={{ public_host }}
+    - name: Export EIP as environment variable
+      ansible.builtin.command:
+        cmd: export EIP=$(curl -s ifconfig.me)
+        register: eip
+      changed_when: false
 
     - name: Build and start application
       ansible.builtin.command:
@@ -146,4 +142,4 @@
         chdir: /home/ubuntu/task-manager-infrastructure
       become_user: ubuntu
       environment:
-        PUBLIC_HOST: "{{ public_host }}"
+        EIP: "{{ eip }}"
