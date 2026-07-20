@@ -1,4 +1,5 @@
 # Production / EC2 overrides
+#   export EIP=your.elastic.ip
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
 
 services:
@@ -19,16 +20,28 @@ services:
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
+    depends_on:
+      - node-exporter
+
   grafana:
     image: grafana/grafana:11.2.0
     ports:
-      - "3001:3000"   # 3000 is already frontend
+      - "3001:3000" # 3000 is already frontend
     volumes:
       - grafana_data:/var/lib/grafana
     depends_on:
       - prometheus
 
-      
+  # Scraped by Prometheus on the Docker network (no public port / SG needed)
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    pid: host
+    restart: unless-stopped
+    command:
+      - "--path.rootfs=/host"
+    volumes:
+      - "/:/host:ro,rslave"
+
 volumes:
   prometheus_data:
   grafana_data:
